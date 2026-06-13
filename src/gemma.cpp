@@ -47,6 +47,8 @@ bool Gemma::open( std::string path ) {
 
     this->_is_open = true;
 
+    file.close();
+
     return _readMetadata();
 
 }
@@ -68,13 +70,14 @@ bool Gemma::_readMetadata() {
     }
 
     // skip header
-    file.seekg(17);
+    file.seekg(17, std::fstream::beg);
 
     u_int32_t meta_size = 0;
-    u_int32_t total_size = 8 + 7 * 4 + 1; // meta size x 2
+    u_int32_t total_size = 4 + 7 * 4 + 1; // meta size x 2
     file.read(reinterpret_cast<char*>(&meta_size), 4);
     if ( !file ) {
         logger(3, "Error reading metadata size at SOM");
+        file.close();
         return false;
     }
 
@@ -83,6 +86,7 @@ bool Gemma::_readMetadata() {
     file.read(reinterpret_cast<char*>(&owner_size), 4);
     if ( !file ) {
         logger(3, "Error reading owner size");
+        file.close();
         return false;
     }
     total_size += owner_size;
@@ -91,6 +95,7 @@ bool Gemma::_readMetadata() {
     file.read(this->_owner.data(), owner_size);
     if ( !file ) {
         logger(3, "Error reading owner data");
+        file.close();
         return false;
     }
 
@@ -99,6 +104,7 @@ bool Gemma::_readMetadata() {
     file.read(reinterpret_cast<char*>(&title_size), 4);
     if ( !file ) {
         logger(3, "Error reading title size");
+        file.close();
         return false;
     }
     total_size += title_size;
@@ -107,6 +113,7 @@ bool Gemma::_readMetadata() {
     file.read(this->_title.data(), title_size);
     if ( !file ) {
         logger(3, "Error reading title data");
+        file.close();
         return false;
     }
 
@@ -115,6 +122,7 @@ bool Gemma::_readMetadata() {
     file.read(reinterpret_cast<char*>(&desc_size), 4);
     if ( !file ) {
         logger(3, "Error reading description size");
+        file.close();
         return false;
     }
     total_size += desc_size;
@@ -123,6 +131,7 @@ bool Gemma::_readMetadata() {
     file.read(this->_description.data(), desc_size);
     if ( !file ) {
         logger(3, "Error reading description data");
+        file.close();
         return false;
     }
 
@@ -131,6 +140,7 @@ bool Gemma::_readMetadata() {
     file.read(reinterpret_cast<char*>(&url_size), 4);
     if ( !file ) {
         logger(3, "Error reading url size");
+        file.close();
         return false;
     }
     total_size += url_size;
@@ -139,6 +149,7 @@ bool Gemma::_readMetadata() {
     file.read(this->_url.data(), url_size);
     if ( !file ) {
         logger(3, "Error reading url data");
+        file.close();
         return false;
     }
 
@@ -147,6 +158,7 @@ bool Gemma::_readMetadata() {
     file.read(reinterpret_cast<char*>(&cover_size), 4);
     if ( !file ) {
         logger(3, "Error reading cover size");
+        file.close();
         return false;
     }
     total_size += cover_size;
@@ -155,6 +167,7 @@ bool Gemma::_readMetadata() {
     file.read(this->_cover.data(), cover_size);
     if ( !file ) {
         logger(3, "Error reading cover data");
+        file.close();
         return false;
     }
 
@@ -163,6 +176,7 @@ bool Gemma::_readMetadata() {
     file.read(reinterpret_cast<char*>(&fields_size), 4);
     if ( !file ) {
         logger(3, "Error reading fields size");
+        file.close();
         return false;
     }
     total_size += fields_size;
@@ -171,6 +185,7 @@ bool Gemma::_readMetadata() {
     file.read(fields.data(), fields_size);
     if ( !file ) {
         logger(3, "Error reading fields data");
+        file.close();
         return false;
     }
 
@@ -188,6 +203,7 @@ bool Gemma::_readMetadata() {
     file.read(reinterpret_cast<char*>(&this->_creation), 4);
     if ( !file ) {
         logger(3, "Error reading creation date");
+        file.close();
         return false;
     }
 
@@ -195,9 +211,11 @@ bool Gemma::_readMetadata() {
     file.read(reinterpret_cast<char*>(&this->_compression), 1);
     if ( !file ) {
         logger(3, "Error reading compression type");
+        file.close();
         return false;
     }
 
+    file.close();
 
     // Size check
     if ( meta_size == total_size ) return true;
@@ -208,11 +226,6 @@ bool Gemma::_readMetadata() {
 }
 
 bool Gemma::createFile() {
-
-    if (!this->_is_open) {
-        logger(3, "Tried to create file when no file was open");
-        return false;
-    }
 
     std::fstream file(
         this->_path, std::fstream::out | std::fstream::binary | std::fstream::trunc
@@ -231,7 +244,7 @@ bool Gemma::createFile() {
     logger(0, "Wrote header");
 
     // -- Size --
-    u_int32_t meta_size = 8 + 7 * 4 + 1;
+    u_int32_t meta_size = 8 * 4 + 1;
     u_int32_t owner_size = this->_owner.size();
     logger(0, ("Owner size: " + std::to_string(owner_size)).c_str());
     u_int32_t title_size = this->_title.size();
@@ -292,6 +305,8 @@ bool Gemma::createFile() {
     file.write(reinterpret_cast<char*>(&this->_compression), 1);
     logger(0, "Wrote compression");
 
+    file.sync();
+    file.close();
     return true;
 
 }
@@ -356,8 +371,8 @@ bool Gemma::appendEntry( std::vector<std::string> e ) {
         return false;
     }
 
-    if ( e.size() > this->_fields.size() ) {
-        logger(3, "Tried to insert more data than there is field");
+    if ( e.size() != this->_fields.size() ) {
+        logger(3, "Number of data to append is different of number of field defined in metadata");
         return false;
     }
 
@@ -388,6 +403,8 @@ bool Gemma::appendEntry( std::vector<std::string> e ) {
         ++i;
     }
 
+    file.sync();
+    file.close();
     return true;
 
 }
@@ -402,8 +419,13 @@ std::vector<std::string> Gemma::getEntryAtAdress( u_int64_t i ) {
 
     std::vector<std::string> result;
 
+    if (!this->_is_open) {
+        logger(3, "Tried to get entry at adress x when no file was open");
+        return result;
+    }
+
     std::fstream file(
-        this->_path, std::fstream::out | std::fstream::binary | std::fstream::app
+        this->_path, std::fstream::in | std::fstream::binary
     );
     if ( !file.is_open() ) {
         logger(3, ("Can't open file at " + this->_path + " to get entry").c_str());
@@ -412,32 +434,51 @@ std::vector<std::string> Gemma::getEntryAtAdress( u_int64_t i ) {
     }
     logger(0, ("Opened file " + this->_path + " to get entry").c_str());
 
+    file.seekg(17, std::fstream::beg);
+    u_int32_t meta_size = 0;
+    file.read(reinterpret_cast<char*>(&meta_size), 4);
+    if ( !file ) {
+        logger(3, "Error reading metadata size at SOM");
+        file.close();
+        return result;
+    }
+
+    if ( meta_size + 17 > i ) {
+        logger(3, ("Entry adress too low: " + std::to_string(meta_size + 17)).c_str());
+        file.close();
+        return result;
+    }
+
     // -- goto entry --
-    file.seekg(i);
+    file.seekg(i, std::fstream::beg);
 
     // -- Get size --
-    u_int32_t entry_size = 0;
+    int64_t entry_size = 0;
     file.read(reinterpret_cast<char*>(&entry_size), 4);
     if ( !file ) {
         logger(3, ("Error reading size of entry " + std::to_string(i)).c_str());
+        file.close();
         return result;
     }
 
     // -- Read attributes --
+    entry_size -= 4;
     int ind = 0;
     while ( entry_size > 0 ) {
         u_int32_t attribute_size = 0;
         file.read(reinterpret_cast<char*>(&attribute_size), 4);
         if ( !file ) {
             logger(3, ("Error reading size of att " + this->_fields.at(ind) + " for entry " + std::to_string(i)).c_str());
+            file.close();
             return result;
         }
-        entry_size -= attribute_size;
+        entry_size -= attribute_size + 4;
 
         std::string attribute = std::string(attribute_size, '\0');
         file.read(attribute.data(), attribute_size);
         if ( !file ) {
             logger(3, ("Error reading att " + this->_fields.at(ind) + " for entry " + std::to_string(i)).c_str());
+            file.close();
             return result;
         }
 
@@ -446,14 +487,20 @@ std::vector<std::string> Gemma::getEntryAtAdress( u_int64_t i ) {
         ++ind;
     }
 
+    file.close();
     return result;
 
 }
 
 bool Gemma::buildMap() {
 
+    if (!this->_is_open) {
+        logger(3, "Tried to build map when no file was open");
+        return false;
+    }
+
     std::fstream file(
-        this->_path, std::fstream::out | std::fstream::binary | std::fstream::app
+        this->_path, std::fstream::in | std::fstream::binary
     );
     if ( !file.is_open() ) {
         logger(3, ("Can't open file at " + this->_path + " to build map").c_str());
@@ -463,18 +510,165 @@ bool Gemma::buildMap() {
     logger(0, ("Opened file " + this->_path + " to build map").c_str());
 
     // -- Skip metadata --
-    file.seekg(17);
+    file.seekg(17, std::fstream::beg);
 
     u_int32_t meta_size = 0;
-    u_int32_t total_size = 8 + 7 * 4 + 1; // meta size x 2
     file.read(reinterpret_cast<char*>(&meta_size), 4);
     if ( !file ) {
         logger(3, "Error reading metadata size at SOM");
+        file.close();
+        return false;
+    }
+    file.seekg(meta_size + 17, std::fstream::beg);
+
+    // -- reference all entries --
+    u_int64_t position = 17 + meta_size;
+    while ( file.peek() != EOF ) {
+
+        u_int32_t entry_size = 0;
+        file.read(reinterpret_cast<char*>(&entry_size), 4);
+        if ( !file ) {
+            logger(3, ("Error reading entry size at " + std::to_string(position)).c_str());
+            file.close();
+            return false;
+        }
+
+        logger(0, ("Found entry at " + std::to_string(entry_size)).c_str());
+
+        this->_map.push_back(position);
+        position += entry_size;
+
+        file.seekg(position, std::fstream::beg);
+
+    }
+
+    this->_size = this->_map.size();
+
+    file.close();
+    return true;
+
+}
+
+u_int64_t Gemma::_getAdressOfId( int i ) {
+
+    if (!this->_is_open) {
+        logger(3, "Tried to get adress of indice when no file was open");
         return false;
     }
 
-    // MEOW
+    if (i < 0) {
+        logger(3, "Entry index must be positive!");
+        return 0;
+    }
 
-    return true;
+    if (this->_map.size() > 0 && this->_map.size() > i)
+        return this->_map.at(i);
+
+    logger(1, "File map does not seem to have been created, falling back to manual entry search");
+
+    std::fstream file(
+        this->_path, std::fstream::in | std::fstream::binary
+    );
+    if ( !file.is_open() ) {
+        logger(3, ("Can't open file at " + this->_path + " to build map").c_str());
+        file.close();
+        return 0;
+    }
+    logger(0, ("Opened file " + this->_path + " to build map").c_str());
+
+    // -- Skip metadata --
+    file.seekg(17, std::fstream::beg);
+
+    u_int32_t meta_size = 0;
+    file.read(reinterpret_cast<char*>(&meta_size), 4);
+    if ( !file ) {
+        logger(3, "Error reading metadata size at SOM");
+        file.close();
+        return 0;
+    }
+    file.seekg(meta_size + 17, std::fstream::beg);
+
+    // -- Jump until correct entry --
+    u_int64_t position = 17 + meta_size;
+    int indice = 0;
+    while ( file.peek() != file.eof() ) {
+
+        u_int32_t entry_size = 0;
+        file.read(reinterpret_cast<char*>(&entry_size), 4);
+        if ( !file ) {
+            logger(3, ("Error reading entry size at " + std::to_string(position)).c_str());
+            file.close();
+            return false;
+        }
+
+        this->_map.push_back(position);
+        position += entry_size;
+
+        file.seekg(position, std::fstream::beg);
+
+        if (indice == i) return position;
+
+        ++indice;
+
+    }
+
+    file.close();
+    return 0;
+
+}
+
+int Gemma::size() {
+
+    if (!this->_is_open) {
+        logger(3, "Tried to get size when no file was open");
+        return 0;
+    }
+
+    if ( this->_size != -1 ) return this->_size;
+
+    std::fstream file(
+        this->_path, std::fstream::in | std::fstream::binary
+    );
+    if ( !file.is_open() ) {
+        logger(3, ("Can't open file at " + this->_path + " to get size").c_str());
+        file.close();
+        return 0;
+    }
+    logger(0, ("Opened file " + this->_path + " to get size").c_str());
+
+    // -- Skip metadata --
+    file.seekg(17, std::fstream::beg);
+
+    u_int32_t meta_size = 0;
+    file.read(reinterpret_cast<char*>(&meta_size), 4);
+    if ( !file ) {
+        logger(3, "Error reading metadata size at SOM");
+        file.close();
+        return 0;
+    }
+    file.seekg(meta_size + 17, std::fstream::beg);
+
+    // -- reference all entries --
+    u_int64_t position = 17 + meta_size;
+    int entry_nb = 0;
+    while ( file.peek() != EOF) {
+
+        u_int32_t entry_size = 0;
+        file.read(reinterpret_cast<char*>(&entry_size), 4);
+        if ( !file ) {
+            logger(3, ("Error reading entry size at " + std::to_string(position)).c_str());
+            file.close();
+            return false;
+        }
+
+        position += entry_size;
+        ++entry_nb;
+
+        file.seekg(position, std::fstream::beg);
+
+    }
+
+    file.close();
+    return entry_nb;
 
 }

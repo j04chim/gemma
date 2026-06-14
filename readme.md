@@ -60,20 +60,6 @@ To display the metadata and the first entry:
 Gemma -m -i 0 file.gemma
 ```
 
-# Build
-
-The implementation currently only use std. It should be compilable everywhere on any machine.
-
-```bash
-$ git clone https://github.com/j04chim/gemma.git
-$ cd gemma
-$ mkdir build
-$ cmake .
-$ make
-```
-
-The binary will be in the build folder. To remove the debug logs, change ``add_definitions(-DLOG_LEVEL=0)`` to ``add_definitions(-DLOG_LEVEL=3)`` or higher in ``CMakeLists.txt`` and re-run cmake.
-
 Code example:
 ```cpp
 // Create the object.
@@ -119,3 +105,17 @@ for ( int i = 0; i < g.size(); ++i ) {
     printf("(%s, %s)\n", r[0].c_str(), r[1].c_str());
 }
 ```
+
+# Build
+
+The implementation currently only use std. It should be compilable everywhere on any machine.
+
+```bash
+$ git clone https://github.com/j04chim/gemma.git
+$ cd gemma
+$ mkdir build
+$ cmake .
+$ make
+```
+
+The binary will be in the build folder. To remove the debug logs, change ``add_definitions(-DLOG_LEVEL=0)`` to ``add_definitions(-DLOG_LEVEL=3)`` or higher in ``CMakeLists.txt`` and re-run cmake.

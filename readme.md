@@ -38,6 +38,43 @@ Fields are named in the metadata and a field name starting with # mean that the 
 
 Currently, compressing data is left to the user as, for my specific case, I have OPF (uncompressed) and EPUB (zip) file and compression on top of compression is useless.
 
+``main.cpp`` contain a CLI tool which can be use to explore a Gemma file.
+
+To get all the entrie which first attribute match with RegEx [a-zA-Z]+
+```bash
+Gemma -r "[a-zA-Z]+" -i 0 file.gemma
+```
+
+To get the entry at index 0:
+```bash
+Gemma -i 0 file.gemma
+```
+
+To display the metadata:
+```bash
+Gemma -m file.gemma
+```
+
+To display the metadata and the first entry:
+```bash
+Gemma -m -i 0 file.gemma
+```
+
+# Build
+
+The implementation currently only use std. It should be compilable everywhere on any machine.
+
+```bash
+$ git clone https://github.com/j04chim/gemma.git
+$ cd gemma
+$ mkdir build
+$ cmake .
+$ make
+```
+
+The binary will be in the build folder. To remove the debug logs, change ``add_definitions(-DLOG_LEVEL=0)`` to ``add_definitions(-DLOG_LEVEL=3)`` or higher in ``CMakeLists.txt`` and re-run cmake.
+
+Code example:
 ```cpp
 // Create the object.
 Gemma g("test.gemma");

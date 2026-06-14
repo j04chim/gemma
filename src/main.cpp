@@ -55,6 +55,11 @@ int main(int argc, char** argv) {
     }
     file->buildMap();
 
+    if ( m ) {
+
+        printf("%s", file->toString().c_str());
+
+    }
 
     if (r && r_value != "" && i && i_value != "") {
 
@@ -76,11 +81,6 @@ int main(int argc, char** argv) {
         for (std::string s: tmp) {
             printf("    - %s\n", s.c_str());
         }
-        return 0;
-
-    } else if ( m ) {
-
-        printf("%s", file->toString().c_str());
         return 0;
 
     }

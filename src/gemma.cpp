@@ -556,7 +556,7 @@ bool Gemma::buildMap() {
             return false;
         }
 
-        logger(0, ("Found entry at " + std::to_string(entry_size)).c_str());
+        logger(0, ("Found entry at " + std::to_string(position)).c_str());
 
         this->_map.push_back(position);
         position += entry_size;
@@ -732,9 +732,9 @@ std::string Gemma::getCover() {
     return this->_cover;
 }
 
-std::vector<std::vector<std::string>> Gemma::getEntriesLike( int i, std::string s ) {
+std::vector<u_int64_t> Gemma::getEntriesLike( int i, std::string s ) {
 
-    std::vector<std::vector<std::string>> result;
+    std::vector<u_int64_t> result;
 
     if (!this->_is_open) {
         logger(3, "Tried to RegEx match when no file was open");
@@ -808,7 +808,7 @@ std::vector<std::vector<std::string>> Gemma::getEntriesLike( int i, std::string 
 
                 // It match the rule
                 if ( std::regex_match(attribute, rule) )
-                    result.push_back( this->getEntryAtAdress(position) );
+                    result.push_back( position );
 
             } else { // else skip it
 

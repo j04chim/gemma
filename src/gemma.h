@@ -228,7 +228,7 @@ class Gemma {
          * @param int Index in field list.
          * @param std::string RegEx rule to match.
          */
-        std::vector<std::vector<std::string>> getEntriesLike( int, std::string );
+        std::vector<u_int64_t> getEntriesLike( int, std::string );
 
     private:
 

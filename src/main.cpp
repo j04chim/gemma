@@ -33,4 +33,8 @@ int main()
         printf("(%s, %s)\n", r[0].c_str(), r[1].c_str());
     }
 
+    for (std::vector<std::string> r: g.getEntriesLike(0, "[a-zA-Z]+")) {
+        printf("(%s, %s)\n", r[0].c_str(), r[1].c_str());
+    }
+
 }

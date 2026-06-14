@@ -222,6 +222,14 @@ class Gemma {
          */
         std::vector<std::string> getEntryAtAdress( u_int64_t );
 
+        /**
+         * @fn getEntriesLike
+         * @brief Return all the entries which field at the given index match the given RegEx rule.
+         * @param int Index in field list.
+         * @param std::string RegEx rule to match.
+         */
+        std::vector<std::vector<std::string>> getEntriesLike( int, std::string );
+
     private:
 
         /**

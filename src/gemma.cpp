@@ -25,6 +25,7 @@
 #include <iostream>
 #include <string>
 #include <sys/types.h>
+#include <regex>
 #include "logger.h"
 
 #include "gemma.h"
@@ -730,4 +731,101 @@ u_int8_t Gemma::getCompression() {
 
 std::string Gemma::getCover() {
     return this->_cover;
+}
+
+std::vector<std::vector<std::string>> Gemma::getEntriesLike( int i, std::string s ) {
+
+    std::vector<std::vector<std::string>> result;
+
+    if (!this->_is_open) {
+        logger(3, "Tried to RegEx match when no file was open");
+        return result;
+    }
+
+    std::fstream file(
+        this->_path, std::fstream::in | std::fstream::binary
+    );
+    if ( !file.is_open() ) {
+        logger(3, ("Can't open file at " + this->_path + " to RegEx match").c_str());
+        file.close();
+        return result;
+    }
+    logger(0, ("Opened file " + this->_path + " to RegEx match").c_str());
+
+    std::regex rule(s);
+
+    // -- Skip metadata --
+    file.seekg(17, std::fstream::beg);
+
+    u_int32_t meta_size = 0;
+    file.read(reinterpret_cast<char*>(&meta_size), 4);
+    if ( !file ) {
+        logger(3, "Error reading metadata size at SOM");
+        file.close();
+        return result;
+    }
+    file.seekg(meta_size + 17, std::fstream::beg);
+
+    // -- Read all entries --
+    u_int64_t position = 17 + meta_size;
+    while ( file.peek() != EOF) {
+
+        u_int32_t entry_size = 0;
+        file.read(reinterpret_cast<char*>(&entry_size), 4);
+        if ( !file ) {
+            logger(3, ("Error reading entry size at " + std::to_string(position)).c_str());
+            file.close();
+            return result;
+        }
+
+        // Read attributes
+        int64_t m_entry_size = entry_size - 4;
+        int ind = 0;
+        while ( m_entry_size > 0 && ind <= i) {
+
+            u_int32_t attribute_size = 0;
+            file.read(reinterpret_cast<char*>(&attribute_size), 4);
+            if ( !file ) {
+
+                logger(3, ("Error reading size of att " + this->_fields.at(ind) + " for entry " + std::to_string(position)).c_str());
+                file.close();
+                return result;
+
+            }
+            m_entry_size -= attribute_size + 4;
+
+            // We found the correct attribute
+            if (ind == i) {
+
+                std::string attribute = std::string(attribute_size, '\0');
+                file.read(attribute.data(), attribute_size);
+                if ( !file ) {
+
+                    logger(3, ("Error reading att " + this->_fields.at(ind) + " for entry " + std::to_string(position)).c_str());
+                    file.close();
+                    return result;
+
+                }
+
+                // It match the rule
+                if ( std::regex_match(attribute, rule) )
+                    result.push_back( this->getEntryAtAdress(position) );
+
+            } else { // else skip it
+
+                file.seekg(position + (entry_size - m_entry_size), std::fstream::beg);
+
+            }
+
+            ++ind;
+        }
+
+        position += entry_size;
+        file.seekg(position, std::fstream::beg);
+
+    }
+
+    file.close();
+    return result;
+
 }

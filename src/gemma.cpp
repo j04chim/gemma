@@ -1,4 +1,25 @@
-// MEOW: comments, tests, doc
+/**
+ * MIT License
+ * Copyright (c) 2026 Joachim Rey
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in all
+ * copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
+ */
 #include <cstdio>
 #include <fstream>
 #include <iostream>
@@ -8,17 +29,15 @@
 
 #include "gemma.h"
 
-Gemma::Gemma( std::string s ) { open(s); };
+Gemma::Gemma( std::string s ) { this->_path = s; };
 
-bool Gemma::open( std::string path ) {
-
-    this->_path = path;
+bool Gemma::open() {
 
     std::fstream file(
-        path, std::fstream::in | std::fstream::binary
+        this->_path, std::fstream::in | std::fstream::binary
     );
     if ( !file.is_open() ) {
-        logger(3, ("Can't open file at " + path).c_str());
+        logger(3, ("Can't open file at " + this->_path).c_str());
         file.close();
         return false;
     }
@@ -73,7 +92,7 @@ bool Gemma::_readMetadata() {
     file.seekg(17, std::fstream::beg);
 
     u_int32_t meta_size = 0;
-    u_int32_t total_size = 4 + 7 * 4 + 1; // meta size x 2
+    u_int32_t total_size = 8 * 4 + 1;
     file.read(reinterpret_cast<char*>(&meta_size), 4);
     if ( !file ) {
         logger(3, "Error reading metadata size at SOM");
@@ -256,7 +275,7 @@ bool Gemma::createFile() {
     u_int32_t cover_size = this->_cover.size();
     logger(0, ("Cover size: " + std::to_string(cover_size)).c_str());
 
-    std::string fields = getFields();
+    std::string fields = this->_getFormatedFields();
     u_int32_t fields_size = fields.size();
     logger(0, ("Fields size: " + std::to_string(fields_size)).c_str());
 
@@ -315,7 +334,7 @@ void Gemma::setOwner( std::string s ) {
     this->_owner = s;
 }
 
-void Gemma::setCreation( int i ) {
+void Gemma::setCreation( u_int32_t i ) {
     this->_creation = i;
 }
 
@@ -343,11 +362,15 @@ void Gemma::setTitle( std::string s ) {
     this->_title = s;
 }
 
-std::string Gemma::getFields() {
+std::string Gemma::_getFormatedFields() {
     std::string fields;
     for (std::string s: this->_fields) {
-        fields += s + ';';
-        printf("%s\n", s.c_str());
+        std::string n = "";
+        for (char c: s) {
+            if (c != ';')
+                n += c;
+        }
+        fields += n + ';';
     }
     fields.erase(fields.size() - 1, 1);
     return fields;
@@ -360,7 +383,7 @@ std::string Gemma::toString() {
            "- Description: " + this->_description + "\n" +
            "- URL: " + this->_url + "\n" +
            "- Cover: " + this->_cover + "\n" +
-           "- Fields: " + this->getFields() + "\n" +
+           "- Fields: " + this->_getFormatedFields() + "\n" +
            "- Compression: " + std::to_string(this->_compression) + "\n";
 }
 
@@ -671,4 +694,40 @@ int Gemma::size() {
     file.close();
     return entry_nb;
 
+}
+
+std::vector<std::string> Gemma::getFields() {
+    return this->_fields;
+}
+
+std::string Gemma::getTitle() {
+    return this->_title;
+}
+
+std::string Gemma::getOwner() {
+    return this->_owner;
+}
+
+std::string Gemma::getPath() {
+    return this->_path;
+}
+
+u_int32_t Gemma::getCreation() {
+    return this->_creation;
+}
+
+std::string Gemma::getDescription() {
+    return this->_description;
+}
+
+std::string Gemma::getUrl() {
+    return this->_url;
+}
+
+u_int8_t Gemma::getCompression() {
+    return this->_compression;
+}
+
+std::string Gemma::getCover() {
+    return this->_cover;
 }

@@ -3,7 +3,7 @@
 
 int main()
 {
-    Gemma g;
+    Gemma g("test.gemma");
 
     g.setCompression(1);
     g.setCover("cover");
@@ -16,9 +16,8 @@ int main()
     g.addField("test2");
     g.toString();
 
-    g.open("test.gemma");
     g.createFile();
-    g.open("test.gemma");
+    g.open();
     printf("%s", g.toString().c_str());
 
     g.appendEntry({"hello", "world"});
